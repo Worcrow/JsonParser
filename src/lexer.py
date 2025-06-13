@@ -1,6 +1,6 @@
 from Tokenizer import *
 import re
-
+import os
 
 class lexer:
     def __init__(self):
@@ -13,7 +13,6 @@ class lexer:
             return False
         matche = re.fullmatch(JsonTokenType.STRING.value, line)
         if matche:
-            end = matche.end()
             token = Token(JsonTokenType.STRING, matche.group(), (line_number, start + 1))
             self.tokenStream.add(token)
             return (True)
@@ -21,7 +20,7 @@ class lexer:
             return (False)
 
     def matchNumber(self, line: str, start: int, line_number: int) -> bool:
-        matches = re.search(JsonTokenType.NUMBER.value, line[start:])
+        matches = re.fullmatch(JsonTokenType.NUMBER.value, line)
         if matches:
             token = Token(JsonTokenType.NUMBER, matches.group(), (lineNumber, start + 1))
             self.tokenStream.add(token)
@@ -71,20 +70,25 @@ class lexer:
             token = self.tokenStream.peek()
         return tokensRep[::-1]
 
+def tokenize_string(line, start, lineNumber, lexerObj):
+    second_quote = re.search(r'(?<!\\)"', line[start + 1:])
+    if not second_quote:
+        raise Exception(f'Error: Invalid String, line {lineNumber}, column {start + 1}')
+    end = second_quote.start() + start + 1
+    if not lexerObj.matchString(line[start:end + 1], start, lineNumber):
+        raise Exception(f'Error : Invalid String, line {lineNumber}, column {start + 1}')
+    return end
+
+def tokenize_digit(line, start, lineNumber, lexerObj):
+    # tokenize digit, 
+    pass
+
 def processLine(line: str, lineNumber: int, lexerObj):
     i = 0
     while i < len(line):
-        pos = None
         if line[i] == '"':
-            second_quote = re.search(r'"', line[i+1:])
-            if second_quote:
-                end = second_quote.start() + i + 1
-                if not lexerObj.matchString(line[i:end + 1], i, lineNumber):
-                    raise Exception(f'Error from if quote: Invalid String, line {lineNumber}, column {i + 1}')
-                i = end
-            else:
-                raise Exception(f'Error from else quote: Invalid Token at line {lineNumber}, column {i + 1}')
-
+            i = tokenize_string(line, i, lineNumber, lexerObj)
+        
         elif line[i] == ":":
             lexerObj.add(JsonStructuredTypeSymbol.NAMESEPARATOR, line[i], lineNumber, i + 1)
         elif line[i] == ",":
@@ -95,13 +99,17 @@ def processLine(line: str, lineNumber: int, lexerObj):
             i += 3
         elif lexerObj.matchBoolean(line[i: i + 5], i, lineNumber):
             i += 4
-        elif (pos := lexerObj.matchNumber(line, i, lineNumber)) != None:
-            i += pos
-        elif not (lexerObj.matchObject(line, i, lineNumber) or lexerObj.matchArray(line, i, lineNumber)):
-            raise Exception(f'Error from elif not: Invalid Token at line {lineNumber}, column {i + 1}') 
+        elif line[i].isdigit() or line[i] == "-":
+            i = tokenize_digit(line, i, lineNumber, lexerObj)    
+        elif line[i] == '{' or line[i] == '}':
+            lexerObj.matchObject(line, i, lineNumber)
+        elif line[i] == ']' or line[i] == '[':
+            lexerObj.matchArray(line, i, lineNumber)
+        else:
+            raise Exception(f'Error : Invalid Token at line {lineNumber}, column {i + 1}') 
         i += 1
 
-with open("/Users/oel-asri/Kingsave/json-parser/unit_test/validJson1.json", 'r') as validJson:
+with open("../unit_test/validJson1.json", 'r') as validJson:
     lineNumber = 0
     lex = lexer()
     lines = validJson.readlines()
@@ -111,3 +119,5 @@ with open("/Users/oel-asri/Kingsave/json-parser/unit_test/validJson1.json", 'r')
 
     print(*lex.__repr__())
 
+
+# /Users/oel-asri/Kingsave/json-parser/
