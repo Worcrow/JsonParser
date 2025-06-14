@@ -24,8 +24,8 @@ class lexer:
         if matches:
             token = Token(JsonTokenType.NUMBER, matches.group(), (lineNumber, start + 1))
             self.tokenStream.add(token)
-            return matches.end() + start
-        return None
+            return True
+        return False
 
     def matchNull(self, line: str, start: int, lineNumber: int) -> bool:
         token = None
@@ -55,13 +55,6 @@ class lexer:
             self.tokenStream.add(token)
         return token != None
 
-    def matchBoolean(self, line: str, start: int, lineNumber: int) -> bool:
-        token = None
-        if line and re.fullmatch(JsonTokenType.BOOLEAN.value, line):
-            token = Token(JsonTokenType.BOOLEAN, line, (lineNumber, start + 1))
-            self.tokenStream.add(token)
-        return token != None
-
     def __repr__(self):
         tokensRep = []
         token = self.tokenStream.peek()
@@ -80,15 +73,19 @@ def tokenize_string(line, start, lineNumber, lexerObj):
     return end
 
 def tokenize_digit(line, start, lineNumber, lexerObj):
-    # tokenize digit, 
-    pass
+    end = start
+    while end < len(line) and line[end] not in "\t\r\n,]}\f\v ":
+        end += 1
+    if lexerObj.matchNumber(line[start:end], start, lineNumber):
+        return end - 1
+    else:
+        raise Exception(f"Error : Invalid Number, line {lineNumber}, column {start + 1}")
 
 def processLine(line: str, lineNumber: int, lexerObj):
     i = 0
     while i < len(line):
         if line[i] == '"':
             i = tokenize_string(line, i, lineNumber, lexerObj)
-        
         elif line[i] == ":":
             lexerObj.add(JsonStructuredTypeSymbol.NAMESEPARATOR, line[i], lineNumber, i + 1)
         elif line[i] == ",":
