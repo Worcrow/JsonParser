@@ -8,18 +8,18 @@ class lexer:
     def add(self, type, char: str, lineNumber: int, columnNumber: int):
         token = Token(type, char.__repr__(), (lineNumber, columnNumber))
         self.tokenStream.add(token)
-    def matchString(self, line: str, start: int, line_number: int) -> bool:
+    def matchString(self, line: str, start: int, lineNumber: int) -> bool:
         if not line:
             return False
         matche = re.fullmatch(JsonTokenType.STRING.value, line)
         if matche:
-            token = Token(JsonTokenType.STRING, matche.group(), (line_number, start + 1))
+            token = Token(JsonTokenType.STRING, matche.group(), (lineNumber, start + 1))
             self.tokenStream.add(token)
             return (True)
         else:
             return (False)
 
-    def matchNumber(self, line: str, start: int, line_number: int) -> bool:
+    def matchNumber(self, line: str, start: int, lineNumber: int) -> bool:
         matches = re.fullmatch(JsonTokenType.NUMBER.value, line)
         if matches:
             token = Token(JsonTokenType.NUMBER, matches.group(), (lineNumber, start + 1))
@@ -34,7 +34,7 @@ class lexer:
             self.tokenStream.add(token)
         return token != None
     
-    def matchBoolean(self, line: str, start: int, line_number: int) -> bool:
+    def matchBoolean(self, line: str, start: int, lineNumber: int) -> bool:
         token = None
 
         if line and re.fullmatch(JsonTokenType.BOOLEAN.value, line):
@@ -115,15 +115,13 @@ def processLine(line: str, lineNumber: int, lexerObj):
             raise Exception(f'Error : Invalid Token at line {lineNumber}, column {i + 1}') 
         i += 1
 
-with open("../unit_test/MOCK_DATA.json", 'r') as validJson:
-    lineNumber = 0
+def processFile(path:str):
     lex = lexer()
-    lines = validJson.readlines()
-    for line in lines:
-        lineNumber += 1
-        processLine(line, lineNumber, lex)
+    with open(path, 'r') as jsonFile:
+        lineNumber = 0
+        lines = jsonFile.readlines()
+        for line in lines:
+            lineNumber += 1
+            processLine(line, lineNumber, lex)
+    return (lex)
 
-    print(*lex.__repr__())
-
-
-# /Users/oel-asri/Kingsave/json-parser/
