@@ -1,7 +1,7 @@
 from enum import Enum
 
 class JsonStringSymbol(Enum):
-    CHAR = r'[A-Za-z0-9\s\-_]'
+    CHAR = r'[^"\\]'
     ESCAPECHAR = r'["\\/bnrft]'
     ESCAPED = r'\\' + ESCAPECHAR
     QUOTATIONMARK = r'"'
