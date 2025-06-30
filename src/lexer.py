@@ -33,6 +33,14 @@ class lexer:
             token = Token(JsonTokenType.NULL, line, (lineNumber, start + 1))
             self.tokenStream.add(token)
         return token != None
+    
+    def matchBoolean(self, line: str, start: int, line_number: int) -> bool:
+        token = None
+
+        if line and re.fullmatch(JsonTokenType.BOOLEAN.value, line):
+            token = Token(JsonTokenType.BOOLEAN, line, (lineNumber, start + 1))
+            self.tokenStream.add(token)
+        return token != None
 
     def matchObject(self, line: str, start: int, lineNumber: int) -> bool:
         token = None
@@ -54,6 +62,7 @@ class lexer:
             token = Token(JsonStructuredTypeSymbol.ENDARRAY, line[start], (lineNumber, start + 1))
             self.tokenStream.add(token)
         return token != None
+    
 
     def __repr__(self):
         tokensRep = []
@@ -106,7 +115,7 @@ def processLine(line: str, lineNumber: int, lexerObj):
             raise Exception(f'Error : Invalid Token at line {lineNumber}, column {i + 1}') 
         i += 1
 
-with open("../unit_test/validJson1.json", 'r') as validJson:
+with open("../unit_test/MOCK_DATA.json", 'r') as validJson:
     lineNumber = 0
     lex = lexer()
     lines = validJson.readlines()
