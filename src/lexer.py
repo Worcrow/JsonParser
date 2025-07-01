@@ -6,7 +6,7 @@ class lexer:
     def __init__(self):
         self.tokenStream = TokenStream()
     def add(self, type, char: str, lineNumber: int, columnNumber: int):
-        token = Token(type, char.__repr__(), (lineNumber, columnNumber))
+        token = Token(type, char, (lineNumber, columnNumber))
         self.tokenStream.add(token)
     def matchString(self, line: str, start: int, lineNumber: int) -> bool:
         if not line:
