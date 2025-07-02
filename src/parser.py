@@ -7,36 +7,44 @@ class AST:
         self.right = right
 
 class Parser:
-    def __init__(self, lex):
-        self.lexer = lex
-        self.root = None
-        self.currentToken = 0
-        self.trackOA = []
-        self.value = (JsonTokenType.STRING, JsonTokenType.NUMBER, JsonTokenType.BOOLEAN, JsonTokenType.NULL)
-    
-    def isTerm(self, index):
-        for ind in range(index, len(self.lexer)):
-            if self.lexer[ind].type != JsonStructuredTypeSymbol.WS:
-                print(self.lexer[ind].type)
-                return False
-        return True
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.ind = 0
+
+    def current(self):
+        return self.tokens[self.ind]
+
+    def skipSpace(self):
+        while self.current().type == JsonStructuredTypeSymbol.WS:
+            self.ind += 1
+
+    def advance(self, expectedTokenType):
+        token = self.current()
+        if token.type == expectedTokenType:
+            self.ind += 1
+            return token
+
+        raise Exception(f"Invalid syntax line: {token.position[0]} column: {token.position[1]}\nExepected: {expectedTokenType}, Got: {token.type}")
 
     def parse(self):
-        while self.currentToken < len(self.lexer):
-            if self.lexer[self.currentToken].type == JsonStructuredTypeSymbol.WS:
-                self.currentToken += 1
-                continue
-            if self.lexer[self.currentToken].type == JsonStructuredTypeSymbol.BEGINOBJECT:
-                pass
-            elif self.lexer[self.currentToken].type == JsonStructuredTypeSymbol.BEGINARRAY:
-                pass
-            elif self.lexer[self.currentToken].type in self.value and self.isTerm(self.currentToken + 1):
-                self.root = AST(self.lexer[self.currentToken], None, None)
-            
-            else:
-                line, column = self.lexer[self.currentToken].position
-                raise Exception(f"Error: Invalid Syntax at {line} {column}")
-            self.currentToken += 1
+       return self.parseValue()
+
+    def parseValue(self):
+        token = self.current()
+        if token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
+            self.advance(JsonStructuredTypeSymbol.BEGINOBJECT)
+            self.skipSpace()
+            if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:
+                return AST(Token(JsonTokenType.EMPTYOBJECT, '', token.position))
+            root = AST(token, None, None)
+            left = AST(self.advance(JsonTokenType.STRING), None, None)
+            self.advance(JsonStructuredTypeSymbol.NAMESEPARATOR)
+            right = self.parseValue()
+            self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
+            root.left = left
+            root.right = right
+
+            return root
 
 
 lex = processFile("/Users/oel-asri/Kingsave/JsonParser/unit_test/validJson1.json")
