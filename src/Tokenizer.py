@@ -39,8 +39,8 @@ class JsonTokenType(Enum):
             r')'
     BOOLEAN = r'(true|false)'
     NULL = r'(null)'
-    OBJECT = r'()' # not for now
-    ARRAY = r'()'  # not for now
+    EMPTYOBJECT = r''
+    EMPTYARRAY = r''
 
 
 class Token:
