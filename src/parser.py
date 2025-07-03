@@ -30,7 +30,7 @@ class Parser:
         return self.tokens[self.ind]
 
     def skipSpace(self):
-        while self.current().type == JsonStructuredTypeSymbol.WS:
+        while self.current() != "EOF" and self.current().type == JsonStructuredTypeSymbol.WS:
             self.ind += 1
 
     def advance(self, expectedTokenType):
@@ -44,30 +44,42 @@ class Parser:
 
     def parse(self):
         root = AST(None)
+        self.skipSpace()
+
         while self.current() != "EOF":
             token = self.current()
             if token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
                 root.value = self.advance(JsonStructuredTypeSymbol.BEGINOBJECT)
-                self.parseObject(root)
+                if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:
+                    self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
+                    return root
+                return self.parseObject(root)
+
             elif token.type in self.values:
                 return primitiveTypeNode(self.advance(token.type))
 
+            elif token.type == JsonStructuredTypeSymbol.ENDOBJECT:
+                raise Exception("Expected value")
+
     def parseObject(self, root):
-        while self.current().type != JsonStructuredTypeSymbol.ENDOBJECT:
-            node = pairNode(None, None)
-            node.key = self.advance(JsonTokenType.STRING)
-            self.advance(JsonStructuredTypeSymbol.NAMESEPARATOR)
-            node.value = self.parse()
-            root.appendChild(node)
-            if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:
-                self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
-                return root
-            self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
+        if self.current() == "EOF":
+            raise Exception("Encountre EOF, Instead A Key")
+        node = pairNode(None, None)
+        node.key = self.advance(JsonTokenType.STRING)
+        self.advance(JsonStructuredTypeSymbol.NAMESEPARATOR)
+        node.value = self.parse()
+        root.appendChild(node)
+        if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:       
+            self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
+            return root
+        self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
+        return self.parseObject(root)
 
 
-lex = processFile("/Users/mac/JsonParser/unit_test/validJson1.json")
+lex = processFile("/Users/oel-asri/Kingsave/JsonParser/unit_test/validJson1.json")
+# print(lex.tokenStream.Token)
 
 parser = Parser(lex.tokenStream.Token)
 ast = parser.parse()
 
-print(ast.right.right)
+print(ast)
