@@ -1,10 +1,22 @@
 from lexer import *
 
+class pairNode:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+class primitiveTypeNode:
+    def __init__(self, value):
+        self.value = value
+
 class AST:
-    def __init__ (self, token, left, right):
-        self.node = token
-        self.left = left
-        self.right = right
+    def __init__ (self, token):
+        self.value = token
+        self.child = []
+
+    def appendChild(self, child):
+        self.child.append(child)
+
 
 class Parser:
     def __init__(self, tokens):
@@ -12,6 +24,7 @@ class Parser:
         self.ind = 0
         self.values = (JsonTokenType.STRING, JsonTokenType.NUMBER, JsonTokenType.NULL,\
                        JsonTokenType.BOOLEAN)
+        self.tokens.append("EOF")
 
     def current(self):
         return self.tokens[self.ind]
@@ -26,41 +39,31 @@ class Parser:
             self.ind += 1
             self.skipSpace()
             return token
-        print(token.__repr__())
+
         raise Exception(f"Invalid syntax line: {token.position[0]} column: {token.position[1]}\nExepected: {expectedTokenType}, Got: {token.type}")
 
     def parse(self):
-        root = AST(None, None, None)
-        self.parseValue(root)
-        return root
+        root = AST(None)
+        while self.current() != "EOF":
+            token = self.current()
+            if token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
+                root.value = self.advance(JsonStructuredTypeSymbol.BEGINOBJECT)
+                self.parseObject(root)
+            elif token.type in self.values:
+                return primitiveTypeNode(self.advance(token.type))
 
-    def parseValue(self, root):
-        token = self.current()
-        if token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
-            self.advance(JsonStructuredTypeSymbol.BEGINOBJECT)
-            if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:
-                return AST(Token(JsonTokenType.EMPTYOBJECT, '', token.position))
-            root = AST(token, None, None)
-            left = AST(self.advance(JsonTokenType.STRING), None, None)
+    def parseObject(self, root):
+        while self.current().type != JsonStructuredTypeSymbol.ENDOBJECT:
+            node = pairNode(None, None)
+            node.key = self.advance(JsonTokenType.STRING)
             self.advance(JsonStructuredTypeSymbol.NAMESEPARATOR)
-            right = self.parseValue()
-            root.left = left
-            root.right = right
+            node.value = self.parse()
+            root.appendChild(node)
             if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:
+                self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
                 return root
             self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
-            return root
 
-        elif token.type in self.values:
-            self.ind += 1
-            self.skipSpace()
-            return AST(token, None, None)
-
-        else:
-            raise Exception(f"Invalid Syntax line: {token.position[0]} column: {token.position[1]}")
-        
-        
-        
 
 lex = processFile("/Users/mac/JsonParser/unit_test/validJson1.json")
 
