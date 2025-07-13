@@ -80,6 +80,11 @@ class Parser:
             root = self.parse_object(root)
             if self.current() != "EOF":
                 raise Exception(f"Expected EOF, encouter {self.current().value}")
+        if current_token.type == JsonStructuredTypeSymbol.BEGINARRAY:
+            root = self.parse_array(root)
+            if self.current() != "EOF":
+                raise Exception(f"Expected EOF, encouter {self.current().value}")
+    
         return root
 
     def parse_value(self):
@@ -102,6 +107,7 @@ class Parser:
             self.parse_array(root)
             return root
 
+        raise JsonParserError(f"Invalid Syntaxt Line: {current_token.position[0]} Column: {current_token.position[1]}")
     
     def parse_object(self, root):
         current_token = self.current()
@@ -114,7 +120,7 @@ class Parser:
                 self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
                 return root
             elif token == 'EOF':
-                raise JsonParserError("Missing end of object {", self.tokens[self.ind - 1].position)
+                raise JsonParserError("Missing end of object }", self.tokens[self.ind - 1].position)
 
         key = self.advance(JsonTokenType.STRING)
         self.advance(JsonStructuredTypeSymbol.NAMESEPARATOR)
@@ -124,7 +130,7 @@ class Parser:
 
         current_token = self.current()
         if current_token == "EOF":
-            raise JsonParserError("Missing end of object {", self.tokens[self.ind - 1].position)
+            raise JsonParserError("Missing end of object }", self.tokens[self.ind - 1].position)
         if current_token.type != JsonStructuredTypeSymbol.ENDOBJECT:
             self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
             return self.parse_object(root)
@@ -137,8 +143,33 @@ class Parser:
         
         
     def parse_array(self, root):
-        pass
+        current_token = self.current()
+        
+        if current_token != 'EOF' and current_token.type == JsonStructuredTypeSymbol.BEGINARRAY:
+            root.value = current_token
+            self.advance(JsonStructuredTypeSymbol.BEGINARRAY)
+            token = self.current()
+            if token != 'EOF' and token.type == JsonStructuredTypeSymbol.ENDARRAY:
+                self.advance(JsonStructuredTypeSymbol.ENDARRAY)
+                return root
+            elif token == 'EOF':
+                raise JsonParserError("Missing end of array ]", self.tokens[self.ind - 1].position)
+        
+        root.appendChild(self.parse_value())
+        current_token = self.current()
 
+        if current_token == 'EOF':
+            raise JsonParserError("Missing end of object ]", self.tokens[self.ind - 1].position)
+        if current_token.type != JsonStructuredTypeSymbol.ENDARRAY:
+            self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
+            self.parse_array(root)
+
+        current_token = self.current()
+        if current_token != 'EOF' and current_token.type == JsonStructuredTypeSymbol.ENDARRAY:
+            self.advance(JsonStructuredTypeSymbol.ENDARRAY)
+            return root
+
+        raise JsonParserError("Invalid Syntax", current_token.position)
 
 
 lex = processFile("unit_test/test.json")
