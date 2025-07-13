@@ -1,6 +1,6 @@
-from Tokenizer import *
 import re
 import os
+from src.Tokenizer import *
 
 class lexer:
     def __init__(self):
