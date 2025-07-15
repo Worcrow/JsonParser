@@ -3,26 +3,7 @@ import sys
 from error.error_handler import JsonParserError
 
 
-sys.setrecursionlimit(3000)
-
-def print_ast_json(node, indent=0, is_last=True, is_key=False):
-    indent_str = "    " * indent
-    connector = "└── " if is_last else "├── "
-
-    if isinstance(node, AST):
-        print(f"{indent_str}{connector}AST({node.value})")
-        for i, child in enumerate(node.child):
-            print_ast_json(child, indent + 1, i == len(node.child) - 1)
-    elif isinstance(node, pairNode):
-        print(f"{indent_str}{connector}pairNode:")
-        print(f"{indent_str}    ├── key: {node.key}")
-        print(f"{indent_str}    └── value:")
-        print_ast_json(node.value, indent + 2, True, True)
-    elif isinstance(node, primitiveTypeNode):
-        print(f"{indent_str}{connector}primitiveTypeNode: {node.value}")
-    else:
-        print(f"{indent_str}{connector}Unknown node type: {type(node)}")
-
+# sys.setrecursionlimit(3000)
 
 class pairNode:
     def __init__(self, key, value):
@@ -52,8 +33,10 @@ class Parser:
         self.inStructuredType = 0
 
     def current(self):
-        # self.skipSpace()
         return self.tokens[self.ind]
+
+    def is_eof(self):
+        return self.current() == 'EOF'
 
     def skipSpace(self):
         while self.current() != "EOF" and self.current().type == JsonStructuredTypeSymbol.WS:
@@ -71,10 +54,8 @@ class Parser:
     def parse(self):
         self.skipSpace()
         current_token = self.current()
-        root = AST(None)
-        if current_token == 'EOF':
-            return
-        if current_token == "EOF":
+        root = AST(current_token)
+        if self.is_eof():
             return
         if current_token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
             root = self.parse_object(root)
@@ -84,13 +65,17 @@ class Parser:
             root = self.parse_array(root)
             if self.current() != "EOF":
                 raise Exception(f"Expected EOF, encouter {self.current().value}")
-    
+        if current_token.type in self.primitives:
+            self.advance(current_token.type)
+            if not self.is_eof():
+                raise JsonParserError("Invalid Syntax", current_token.position)
+
         return root
 
     def parse_value(self):
         current_token = self.current()
 
-        if current_token == 'EOF':
+        if self.is_eof():
             raise JsonParserError("Expected Json Values, Encouter EOF")
 
         if current_token.type in self.primitives:
@@ -143,42 +128,58 @@ class Parser:
         
         
     def parse_array(self, root):
-        current_token = self.current()
-        
-        if current_token != 'EOF' and current_token.type == JsonStructuredTypeSymbol.BEGINARRAY:
-            root.value = current_token
-            self.advance(JsonStructuredTypeSymbol.BEGINARRAY)
-            token = self.current()
-            if token != 'EOF' and token.type == JsonStructuredTypeSymbol.ENDARRAY:
-                self.advance(JsonStructuredTypeSymbol.ENDARRAY)
-                return root
-            elif token == 'EOF':
-                raise JsonParserError("Missing end of array ]", self.tokens[self.ind - 1].position)
-        
-        root.appendChild(self.parse_value())
-        current_token = self.current()
+        root.value = self.advance(JsonStructuredTypeSymbol.BEGINARRAY)
 
-        if current_token == 'EOF':
-            raise JsonParserError("Missing end of object ]", self.tokens[self.ind - 1].position)
-        if current_token.type != JsonStructuredTypeSymbol.ENDARRAY:
-            self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
-            self.parse_array(root)
-
-        current_token = self.current()
-        if current_token != 'EOF' and current_token.type == JsonStructuredTypeSymbol.ENDARRAY:
+        if self.is_eof():
+            raise JsonParserError("Missing end of array ]", self.tokens[self.ind - 1].position)
+        
+        if self.current().type == JsonStructuredTypeSymbol.ENDARRAY:
             self.advance(JsonStructuredTypeSymbol.ENDARRAY)
             return root
 
-        raise JsonParserError("Invalid Syntax", current_token.position)
+        while True:
+            element = self.parse_value()
+            root.appendChild(element)
+            current_token = self.current()
 
+            if current_token == 'EOF':
+                raise JsonParserError("Invalid Syntax", self.tokens[self.ind - 1].position)
+            elif current_token.type == JsonStructuredTypeSymbol.ENDARRAY:
+                self.advance(JsonStructuredTypeSymbol.ENDARRAY)
+                break
+            elif current_token.type == JsonStructuredTypeSymbol.VALUESEPARATOR:
+                self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
+                current_token = self.current()
+                if current_token == 'EOF' :
+                    raise JsonParserError("Invalid Syntax Expexcted Json values encouter EOF", self.tokens[self.ind - 1].position)
+                elif current_token.type == JsonStructuredTypeSymbol.ENDARRAY:
+                    raise JsonParserError("Invalid Syntax, end of array ']' after value separator ','", current_token.position)
+        return root
 
-lex = processFile("unit_test/test.json")
+lex = processFile("unit_test/MOCK_DATA.json")
 
 # print(lex.tokenStream.Token)
 
 parser = Parser(lex.tokenStream.Token)
 ast = parser.parse()
 
+def print_ast_json(node, indent=0, is_last=True, is_key=False):
+    indent_str = "    " * indent
+    connector = "└── " if is_last else "├── "
+
+    if isinstance(node, AST):
+        print(f"{indent_str}{connector}AST({node.value})")
+        for i, child in enumerate(node.child):
+            print_ast_json(child, indent + 1, i == len(node.child) - 1)
+    elif isinstance(node, pairNode):
+        print(f"{indent_str}{connector}pairNode:")
+        print(f"{indent_str}    ├── key: {node.key}")
+        print(f"{indent_str}    └── value:")
+        print_ast_json(node.value, indent + 2, True, True)
+    elif isinstance(node, primitiveTypeNode):
+        print(f"{indent_str}{connector}primitiveTypeNode: {node.value}")
+    else:
+        print(f"{indent_str}{connector}Unknown node type: {type(node)}")
 
 print_ast_json(ast)
 

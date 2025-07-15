@@ -48,20 +48,63 @@
 			"typeName": "page"
 		},
 		{
+			"x": -516.4398250579834,
+			"y": -149.63990108315045,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:VfvJ-w0sPccW4OgyHHAeV",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "m",
+				"w": 116.19820404052734,
+				"text": "[[], []]",
+				"font": "mono",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1
+			},
+			"parentId": "page:page",
+			"index": "a24Im",
+			"typeName": "shape"
+		},
+		{
+			"x": -645.3212184906006,
+			"y": -22.08552638832623,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:9cyc3OyRplQf6qdOBPG_U",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "s",
+				"w": 281.7662353515625,
+				"text": "parse_array:\n  if current == [:\n    advance()\n    if current == ]:\n      advance()\n      return root\n    elif current == EOF:\n        raise SyntaxError\n\nroot.append(parse_value())\nif current == ]:\n  return root\nelif current == 'EOF':\n  raise SyntaxError()\nadvance(,)\nreturn parse_array()",
+				"font": "mono",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1
+			},
+			"parentId": "page:page",
+			"index": "a32vL",
+			"typeName": "shape"
+		},
+		{
 			"id": "pointer:pointer",
 			"typeName": "pointer",
-			"x": 133.9713541004393,
-			"y": 199.8632705476549,
-			"lastActivityTimestamp": 1751487402767,
+			"x": -485.01195335388184,
+			"y": -133.05390084255615,
+			"lastActivityTimestamp": 1752532252623,
 			"meta": {}
 		},
 		{
 			"followingUserId": null,
 			"opacityForNextShape": 1,
-			"stylesForNextShape": {
-				"tldraw:size": "s",
-				"tldraw:font": "mono"
-			},
+			"stylesForNextShape": {},
 			"brush": null,
 			"scribbles": [],
 			"cursor": {
@@ -75,8 +118,8 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 369.1666564941406,
-				"h": 552.5
+				"w": 385.4166564941406,
+				"h": 719.3286743164062
 			},
 			"insets": [
 				false,
@@ -91,7 +134,7 @@
 			"isChatting": false,
 			"highlightedUserIds": [],
 			"isFocused": true,
-			"devicePixelRatio": 2.4000000953674316,
+			"devicePixelRatio": 3.4560000896453857,
 			"isCoarsePointer": false,
 			"isHoveringCanvas": true,
 			"openMenus": [],
@@ -104,12 +147,12 @@
 			"typeName": "instance"
 		},
 		{
-			"editingShapeId": "shape:yLacnuMtlPIxZkEQvE1-q",
+			"editingShapeId": "shape:VfvJ-w0sPccW4OgyHHAeV",
 			"croppingShapeId": null,
 			"selectedShapeIds": [
-				"shape:yLacnuMtlPIxZkEQvE1-q"
+				"shape:VfvJ-w0sPccW4OgyHHAeV"
 			],
-			"hoveredShapeId": "shape:yLacnuMtlPIxZkEQvE1-q",
+			"hoveredShapeId": "shape:VfvJ-w0sPccW4OgyHHAeV",
 			"erasingShapeIds": [],
 			"hintingShapeIds": [],
 			"focusedGroupId": null,
@@ -119,35 +162,12 @@
 			"typeName": "instance_page_state"
 		},
 		{
-			"x": -1.6666666004392863,
-			"y": -13.333332803514288,
+			"x": 690.666524887085,
+			"y": 216.43244851101318,
 			"z": 1,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
-		},
-		{
-			"x": 89.08203125,
-			"y": 93.95832824707031,
-			"rotation": 0,
-			"isLocked": false,
-			"opacity": 1,
-			"meta": {},
-			"id": "shape:yLacnuMtlPIxZkEQvE1-q",
-			"type": "text",
-			"props": {
-				"color": "black",
-				"size": "s",
-				"w": 217.0091094970703,
-				"text": "{\n    \"coord\": { \n      \"lon\": 139.01,\n      \"lat\": 35.02\n},",
-				"font": "mono",
-				"textAlign": "start",
-				"autoSize": true,
-				"scale": 1
-			},
-			"parentId": "page:page",
-			"index": "a1",
-			"typeName": "shape"
 		}
 	]
 }
