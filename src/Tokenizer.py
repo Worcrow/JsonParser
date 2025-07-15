@@ -41,6 +41,7 @@ class JsonTokenType(Enum):
     NULL = r'(null)'
     EMPTYOBJECT = r''
     EMPTYARRAY = r''
+    EOF = r'EOF'
 
 
 class Token:

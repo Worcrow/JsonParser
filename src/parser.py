@@ -29,46 +29,57 @@ class Parser:
         self.ind = 0
         self.primitives = (JsonTokenType.STRING, JsonTokenType.NUMBER, JsonTokenType.NULL,\
                        JsonTokenType.BOOLEAN)
-        self.tokens.append("EOF")
+        eof = Token(JsonTokenType.EOF, 'EOF', (self.tokens[-1].position[0] + 1, self.tokens[-1].position[1]))
+        self.tokens.append(eof)
         self.inStructuredType = 0
 
     def current(self):
         return self.tokens[self.ind]
 
     def is_eof(self):
-        return self.current() == 'EOF'
+        return self.current().type == JsonTokenType.EOF
 
     def skipSpace(self):
-        while self.current() != "EOF" and self.current().type == JsonStructuredTypeSymbol.WS:
+        while self.current().type == JsonStructuredTypeSymbol.WS:
             self.ind += 1
 
     def advance(self, expectedTokenType):
         token = self.current()
-        if token != "EOF" and token.type == expectedTokenType:
+        if token.type == expectedTokenType:
             self.ind += 1
             self.skipSpace()
             return token
-
-        raise SyntaxError(f"Invalid syntax line: {token.position[0]} column: {token.position[1]}\nExepected: {expectedTokenType}, Got: {token.type}")
+        raise JsonParserError(
+            f"Syntax Error at line {token.position[0]}, column {token.position[1]}: "
+            f"Expected token type `{expectedTokenType}`, but got `{token.type}` with value `{token.value!r}`"
+        )        
 
     def parse(self):
         self.skipSpace()
         current_token = self.current()
+        top_level = ''
         root = AST(current_token)
         if self.is_eof():
             return
+
         if current_token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
             root = self.parse_object(root)
-            if self.current() != "EOF":
-                raise Exception(f"Expected EOF, encouter {self.current().value}")
-        if current_token.type == JsonStructuredTypeSymbol.BEGINARRAY:
+            top_level = 'object'
+
+        elif current_token.type == JsonStructuredTypeSymbol.BEGINARRAY:
             root = self.parse_array(root)
-            if self.current() != "EOF":
-                raise Exception(f"Expected EOF, encouter {self.current().value}")
-        if current_token.type in self.primitives:
+            top_level = 'array'
+
+        elif current_token.type in self.primitives:
             self.advance(current_token.type)
-            if not self.is_eof():
-                raise JsonParserError("Invalid Syntax", current_token.position)
+            root.value = primitiveTypeNode(current_token)
+            top_level = 'primitive'
+
+        if not self.is_eof():
+            raise JsonParserError(
+                f'Expected end of input after top-level {top_level}, but found `{self.current().type}'
+                f' with value {self.current().value!r}', self.current().position
+            )
 
         return root
 
@@ -76,7 +87,9 @@ class Parser:
         current_token = self.current()
 
         if self.is_eof():
-            raise JsonParserError("Expected Json Values, Encouter EOF")
+            raise JsonParserError(
+                "Syntax Error: Expected a JSON value (object, array, string, number, boolean, or null), but reached end of input"
+            )
 
         if current_token.type in self.primitives:
             self.advance(current_token.type)
@@ -84,28 +97,33 @@ class Parser:
     
         if current_token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
             root = AST(current_token)
-            self.parse_object(root)
-            return root
+            return self.parse_object(root)
 
         if current_token.type == JsonStructuredTypeSymbol.BEGINARRAY:
             root = AST(current_token)
-            self.parse_array(root)
-            return root
+            return self.parse_array(root)
 
-        raise JsonParserError(f"Invalid Syntaxt Line: {current_token.position[0]} Column: {current_token.position[1]}")
+        raise JsonParserError(
+            f"Syntax Error at line {current_token.position[0]}, column {current_token.position[1]}: "
+            f"Unexpected token `{current_token.type}` with value {current_token.value!r}. "
+            f"Expected a JSON value (object, array, string, number, boolean, or null).",
+            current_token.position
+        )
     
     def parse_object(self, root):
         current_token = self.current()
 
-        if current_token != 'EOF' and current_token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
+        if current_token.type == JsonStructuredTypeSymbol.BEGINOBJECT:
             root.value = current_token
             self.advance(JsonStructuredTypeSymbol.BEGINOBJECT)
-            token = self.current()
-            if token != 'EOF' and token.type == JsonStructuredTypeSymbol.ENDOBJECT:
+            if self.is_eof():
+                raise JsonParserError(
+                    "Syntax Error: Object not properly closed. Expected `}` before end of file.",
+                    self.current().position
+                )
+            if self.current().type == JsonStructuredTypeSymbol.ENDOBJECT:
                 self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
                 return root
-            elif token == 'EOF':
-                raise JsonParserError("Missing end of object }", self.tokens[self.ind - 1].position)
 
         key = self.advance(JsonTokenType.STRING)
         self.advance(JsonStructuredTypeSymbol.NAMESEPARATOR)
@@ -113,25 +131,36 @@ class Parser:
         node = pairNode(key, value)
         root.appendChild(node)
 
+        if self.is_eof():
+            raise JsonParserError(
+                "Syntax Error: Object not properly closed. Expected `}` before end of file.",
+                self.current().position
+            )
+
         current_token = self.current()
-        if current_token == "EOF":
-            raise JsonParserError("Missing end of object }", self.tokens[self.ind - 1].position)
         if current_token.type != JsonStructuredTypeSymbol.ENDOBJECT:
             self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
             return self.parse_object(root)
 
-        if current_token != 'EOF' and current_token.type == JsonStructuredTypeSymbol.ENDOBJECT:
+        if current_token.type == JsonStructuredTypeSymbol.ENDOBJECT:
             self.advance(JsonStructuredTypeSymbol.ENDOBJECT)
             return root
         
-        raise JsonParserError("Invalid Syntax", current_token.position)
+        raise JsonParserError(
+            f"Syntax Error: Unexpected token `{current_token.type}` with value {current_token.value!r}. "
+            f"Expected `,` or `{'}'}` in object.",
+            current_token.position
+        )
         
         
     def parse_array(self, root):
         root.value = self.advance(JsonStructuredTypeSymbol.BEGINARRAY)
 
         if self.is_eof():
-            raise JsonParserError("Missing end of array ]", self.tokens[self.ind - 1].position)
+            raise JsonParserError(
+                "Unexpected end of input: Expected elements or ']' to close the array.",
+                self.current().position
+            )
         
         if self.current().type == JsonStructuredTypeSymbol.ENDARRAY:
             self.advance(JsonStructuredTypeSymbol.ENDARRAY)
@@ -142,18 +171,27 @@ class Parser:
             root.appendChild(element)
             current_token = self.current()
 
-            if current_token == 'EOF':
-                raise JsonParserError("Invalid Syntax", self.tokens[self.ind - 1].position)
+            if self.is_eof():
+                raise JsonParserError(
+                    "Unexpected end of input: Expected ',' or ']' after array element.",
+                    self.current().position
+                )
+
             elif current_token.type == JsonStructuredTypeSymbol.ENDARRAY:
                 self.advance(JsonStructuredTypeSymbol.ENDARRAY)
                 break
             elif current_token.type == JsonStructuredTypeSymbol.VALUESEPARATOR:
                 self.advance(JsonStructuredTypeSymbol.VALUESEPARATOR)
-                current_token = self.current()
-                if current_token == 'EOF' :
-                    raise JsonParserError("Invalid Syntax Expexcted Json values encouter EOF", self.tokens[self.ind - 1].position)
-                elif current_token.type == JsonStructuredTypeSymbol.ENDARRAY:
-                    raise JsonParserError("Invalid Syntax, end of array ']' after value separator ','", current_token.position)
+                if self.is_eof():
+                    raise JsonParserError(
+                        "Syntax Error: Expected JSON value after `,`, but encountered EOF.",
+                        self.current().position
+                    )
+                elif self.current().type == JsonStructuredTypeSymbol.ENDARRAY:
+                    raise JsonParserError(
+                        "Syntax Error: Trailing comma before `]` is not allowed in JSON arrays.",
+                        self.current().position
+                    )
         return root
 
 lex = processFile("unit_test/MOCK_DATA.json")

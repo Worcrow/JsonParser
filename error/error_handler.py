@@ -1,15 +1,16 @@
 class JsonParserError(Exception):
     """Custom exception for errors during JSON parsing."""
-    
-    def __init__(self, message, position=None):
-        self.message = message
-        self.position = position  # e.g., (line, column)
-        super().__init__(self._format_message())
 
-    def _format_message(self):
+    def __init__(self, message, position=None):
+        self.position = position  # (line, column)
+        formatted = self._format_message(message)
+        super().__init__(formatted)
+
+    def _format_message(self, message):
         if self.position:
-            return f"[Line {self.position[0]}, Column {self.position[1]}] {self.message}"
-        return self.message
+            line, col = self.position
+            return f"[Line {line}, Column {col}] {message}"
+        return message
 
     def __str__(self):
-        return self._format_message()
+        return self.args[0]
