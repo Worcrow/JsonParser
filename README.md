@@ -61,6 +61,7 @@ Parsing this JSON:
   "age": 30,
   "hobbies": ["reading", "gaming"]
 }
+```
 
 └── AST(Token('{'))
     ├── pairNode:
@@ -77,7 +78,7 @@ Parsing this JSON:
     │       └── AST(Token('['))
     │           ├── primitiveTypeNode: "reading"
     │           └── primitiveTypeNode: "gaming"
-```
+
 ---
 
 ## 📚 Learnings
@@ -103,6 +104,6 @@ Through building this parser from scratch, the following core concepts were expl
 ---
 
 ## 🧑‍💻 Author
-Created with 💻 by [Oussama Asri](https://github.com/Worcrow)
+Created with 💻 by [Oussama El-Asri](https://github.com/Worcrow)
 ---
-> Feel free to use, fork, or contribute. This is a learning project and a great deep-dive into how data parsing really works!
+> Feel free to use or fork. This is a learning project and a great deep-dive into how data parsing really works!
