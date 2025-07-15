@@ -61,7 +61,7 @@ Parsing this JSON:
   "age": 30,
   "hobbies": ["reading", "gaming"]
 }
-```
+
 
 └── AST(Token('{'))
     ├── pairNode:
@@ -78,6 +78,7 @@ Parsing this JSON:
     │       └── AST(Token('['))
     │           ├── primitiveTypeNode: "reading"
     │           └── primitiveTypeNode: "gaming"
+```
 
 ---
 
