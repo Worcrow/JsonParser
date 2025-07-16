@@ -1,4 +1,4 @@
-from lexer import *
+from src.parser.lexer import *
 import sys
 
 sys.path.extend(['/Users/mac/JsonParser/error'])
@@ -22,13 +22,12 @@ class AST:
     def appendChild(self, child):
         self.child.append(child)
 
-
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.ind = 0
         self.primitives = (JsonTokenType.STRING, JsonTokenType.NUMBER, JsonTokenType.NULL,\
-                       JsonTokenType.BOOLEAN)
+                           JsonTokenType.BOOLEAN)
         eof = Token(JsonTokenType.EOF, 'EOF', (self.tokens[-1].position[0] + 1, self.tokens[-1].position[1]))
         self.tokens.append(eof)
         self.inStructuredType = 0
@@ -151,8 +150,7 @@ class Parser:
             f"Expected `,` or `{'}'}` in object.",
             current_token.position
         )
-        
-        
+
     def parse_array(self, root):
         root.value = self.advance(JsonStructuredTypeSymbol.BEGINARRAY)
 
@@ -203,22 +201,22 @@ class Parser:
 # parser = Parser(lex.tokenStream.Token)
 # ast = parser.parse()
 
-# def print_ast_json(node, indent=0, is_last=True, is_key=False):
-#     indent_str = "    " * indent
-#     connector = "└── " if is_last else "├── "
+def print_ast_json(node, indent=0, is_last=True, is_key=False):
+    indent_str = "    " * indent
+    connector = "└── " if is_last else "├── "
 
-#     if isinstance(node, AST):
-#         print(f"{indent_str}{connector}AST({node.value})")
-#         for i, child in enumerate(node.child):
-#             print_ast_json(child, indent + 1, i == len(node.child) - 1)
-#     elif isinstance(node, pairNode):
-#         print(f"{indent_str}{connector}pairNode:")
-#         print(f"{indent_str}    ├── key: {node.key}")
-#         print(f"{indent_str}    └── value:")
-#         print_ast_json(node.value, indent + 2, True, True)
-#     elif isinstance(node, primitiveTypeNode):
-#         print(f"{indent_str}{connector}primitiveTypeNode: {node.value}")
-#     else:
-#         print(f"{indent_str}{connector}Unknown node type: {type(node)}")
+    if isinstance(node, AST):
+        print(f"{indent_str}{connector}AST({node.value})")
+        for i, child in enumerate(node.child):
+            print_ast_json(child, indent + 1, i == len(node.child) - 1)
+    elif isinstance(node, pairNode):
+        print(f"{indent_str}{connector}pairNode:")
+        print(f"{indent_str}    ├── key: {node.key}")
+        print(f"{indent_str}    └── value:")
+        print_ast_json(node.value, indent + 2, True, True)
+    elif isinstance(node, primitiveTypeNode):
+        print(f"{indent_str}{connector}primitiveTypeNode: {node.value}")
+    else:
+        print(f"{indent_str}{connector}Unknown node type: {type(node)}")
 
 # print_ast_json(ast)
